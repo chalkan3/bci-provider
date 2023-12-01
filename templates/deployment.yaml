@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "bci-services-provider.fullname" . }}
+  labels:
+    {{- include "bci-services-provider.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.service.spec.scaling.autoscaling.enabled }}
+  replicas: 1
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "bci-services-provider.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "bci-services-provider.labels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "bci-services-provider.serviceAccountName" . }}
+      containers:
+        - name: {{ include "bci-services-provider.fullname" . }}
+          image: "{{ .Values.service.spec.runtime.image.name | default "chalkan33/infra-cloud" }}:{{ .Values.service.spec.runtime.image.tag | default "latest" }}"
+          imagePullPolicy: {{ .Values.service.spec.runtime.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          env:
+            {{- toYaml .Values.service.spec.runtime.env | nindent 12 }}
+          args:
+            - run
+            - {{ .Values.service.metadata.name }}
+            - "--http-port=80"
+            - "--api-version={{ .Values.service.metadata.version }}"
+            - "--route-path={{ .Values.service.metadata.name }}"
+            - "--service-name={{ .Values.service.metadata.name }}"
+            - "--migration-path=."
+           {{- with .Values.service.spec.runtime.flags }}
+           {{- toYaml .Values.service.spec.runtime.flags | nindent 12 }}
+           {{- end }}
+
+          resources:
+            {{- toYaml .Values.service.spec.runtime.resources | nindent 12 }}
+          {{- with .Values.service.spec.storage.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.service.spec.storage.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.service.schedule.on }}
+      nodeSelector:
+        {{- toYaml .Values.service.schedule.on | nindent 8 }}
+      {{- end }}
+

@@ -1,0 +1,55 @@
+service:
+  schedule:
+    on:
+      node:
+  metadata:
+    name: infra-service
+    version: v1
+  spec:
+    runtime:
+      image:
+        repository: nginx
+        pullPolicy: IfNotPresent
+        tag: ""
+      flags:
+
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+      env: []
+
+
+    security:
+      serviceAccount:
+        create: true
+        automount: true
+        annotations: {}
+    network:
+      internal: false
+      port: 80
+      type: LoadBalacer
+    scaling:
+      autoscaling:
+        enabled: false
+        minReplicas: 1
+        maxReplicas: 100
+        targetCPUUtilizationPercentage: 80
+    storage:
+      volumes: []
+      volumeMounts: []
+
+volumes: []
+
+
+volumeMounts: []
+
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
